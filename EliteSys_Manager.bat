@@ -1803,7 +1803,7 @@ echo ║ [9]  GIMP (Resim Editörü)                  [10] OBS Studio (Ekran Kay
 echo ║ [11] KeePassXC (Şifre Yöneticisi)          [12] Paint.NET (Resim Editörü)      ║
 echo ║ [13] K-Lite Codec Pack                     [14] ShareX (Ekran Görüntüsü/Kayıt) ║
 echo ║ [15] Everything (Dosya Arama)              [16] IObit Unlocker (Dosya Kilidi)  ║
-echo ║ [17] CCleaner (Sistem Temizleme)           [18] Inkscape (Vektör Editörü)      ║
+echo ║ [17] BleachBit (Sistem Temizleme)          [18] Inkscape (Vektör Editörü)      ║
 echo ║ [19] Format Factory                        [20] Audacity (Ses Editörü)         ║
 echo ║ [0]  Ana Menüye Dön                                                            ║
 echo ╚════════════════════════════════════════════════════════════════════════════════╝
@@ -1829,7 +1829,7 @@ if %free_soft% equ 13 goto install_klite
 if %free_soft% equ 14 goto install_sharex
 if %free_soft% equ 15 goto install_everything
 if %free_soft% equ 16 goto install_iobit_unlocker
-if %free_soft% equ 17 goto install_ccleaner
+if %free_soft% equ 17 goto install_BleachBit
 if %free_soft% equ 18 goto install_inkscape
 if %free_soft% equ 19 goto install_factory
 if %free_soft% equ 20 goto install_audacity
@@ -1838,32 +1838,33 @@ if %free_soft% equ 0 goto ana_menu
 goto free_software_menu
 
 :install_audacity
-echo Audacity kurulumu hazırlanıyor... v3.7.7
+cls
 call :downloadAndInstall "https://github.com/audacity/audacity/releases/download/Audacity-3.7.7/audacity-win-3.7.7-64bit.exe" "audacity_setup.exe" "/VERYSILENT /NORESTART /SUPPRESSMSGBOXES /SP-"
+timeout /t 1 /nobreak >nul
 goto free_software_menu
 
 :install_7zip
 cls
-echo 7-Zip ZS kurulumu hazirlaniyor...
-echo En guncel surum kontrol ediliyor...
+call :downloadAndInstall "https://github.com/mcmilk/7-Zip-zstd/releases/download/v25.01-v1.5.7-R4/7z25.01-zstd-x64.exe" "7z_setup.exe" "/S"
 
-set "ZIP_URL="
-for /f "delims=" %%a in ('powershell -NoProfile -Command "try { $release = Invoke-WebRequest -Uri 'https://api.github.com/repos/mcmilk/7-Zip-zstd/releases/latest' -UseBasicParsing | ConvertFrom-Json; $asset = $release.assets | Where-Object { $_.name -match '7z.*-zstd-x64\.exe$' } | Select-Object -First 1; if ($asset) { Write-Host $asset.browser_download_url } else { Write-Host 'ERROR' } } catch { Write-Host 'ERROR' }"') do set "ZIP_URL=%%a"
-
-if "%ZIP_URL%"=="ERROR" (
-    echo [UYARI] Dinamik baglanti bulunamadi, sabit surum kullaniliyor...
-    set "ZIP_URL=https://github.com/mcmilk/7-Zip-zstd/releases/download/v25.01-v1.5.7-R1/7z25.01-zstd-x64.exe"
-)
-
-echo Indirme baglantisi: %ZIP_URL%
-call :downloadAndInstall "%ZIP_URL%" "7z_setup.exe" "/S /ASSOC"
-
-if errorlevel 1 (
-    echo [HATA] 7-Zip kurulumu basarisiz oldu!
+if %errorlevel% equ 0 (
+    echo 7-Zip ZS başarıyla kuruldu.
+    
+    echo Dosya ilişkilendirmeleri yapılıyor...
+    assoc .zip=7-Zip.zip
+    assoc .rar=7-Zip.rar
+    assoc .7z=7-Zip.7z
+    ftype 7-Zip.zip="C:\Program Files\7-Zip-Zstandard\7zFM.exe" "%%1"
+    ftype 7-Zip.rar="C:\Program Files\7-Zip-Zstandard\7zFM.exe" "%%1"
+    ftype 7-Zip.7z="C:\Program Files\7-Zip-Zstandard\7zFM.exe" "%%1"
+    echo [OK] .zip, .rar ve .7z ilişkilendirmesi yapıldı.
+    
+    timeout /t 1 /nobreak >nul
+) else (
+    echo 7-Zip ZS kurulumu başarısız oldu.
     pause
 )
 
-echo [OK] 7-Zip ZS kurulumu tamamlandi.
 goto free_software_menu
 
 :install_aimp
@@ -1875,8 +1876,6 @@ goto free_software_menu
 
 :install_vlc
 cls
-echo VLC Media Player kurulumu hazırlanıyor...
-echo En son surum kontrol ediliyor...
 for /f "delims=" %%i in ('powershell -NoProfile -Command ^
     "$ProgressPreference = 'SilentlyContinue';" ^
     "try {" ^
@@ -1889,7 +1888,7 @@ for /f "delims=" %%i in ('powershell -NoProfile -Command ^
     "}"') do set "vlcUrl=%%i"
 
 if "%vlcUrl%"=="ERROR" (
-    echo Dinamik baglanti bulunamadi, sabit surum kullaniliyor...
+    echo Dinamik baglantı bulunamadı, sabit surum kullanılıyor...
     set "vlcUrl=https://get.videolan.org/vlc/3.0.23/win64/vlc-3.0.23-win64.exe"
 )
 
@@ -1909,10 +1908,8 @@ goto free_software_menu
 
 :install_potplayer
 cls
-echo PotPlayer kurulumu hazirlaniyor...
 call :downloadAndInstall "https://t1.daumcdn.net/potplayer/PotPlayer/Version/Latest/PotPlayerSetup64.exe" "potplayer_setup.exe" "/S /NOUPDATES"
 
-:: PotPlayer'i kapat
 taskkill /f /im PotPlayer64.exe >nul 2>&1
 taskkill /f /im PotPlayer.exe >nul 2>&1
 timeout /t 2 >nul
@@ -1935,101 +1932,293 @@ echo AssociateAudio=1
 
 attrib +r "%potplayerIni%" >nul 2>&1
 
-echo [OK] PotPlayer kurulumu ve ayarlari tamamlandi.
+echo [OK] PotPlayer kurulumu ve ayarları tamamlandı.
 goto free_software_menu
 
 :install_kmplayer
 cls
-echo KMPlayer kurulumu hazirlaniyor...
-call :downloadAndInstall "https://dn.kmplayer.com/Dn/kmp32/415d/KMPlayer_4.2.3.34.exe" "kmplayer_setup.exe" "/S /SUPPRESSMSGBOXES /NOICONS /NCRC"
-taskkill /f /im KMPlayer.exe >nul 2>&1
-timeout /t 2 >nul
+call :downloadAndInstall "https://dn.kmplayer.com/Dn/kmp64x/KMP64_2025.10.16.11.exe" "kmplayer_setup_x64.exe" "/S /SUPPRESSMSGBOXES /NOICONS /NCRC"
+if %errorlevel% equ 0 (
+    echo KMPlayer 64-bit başarıyla kuruldu (setup).
+    taskkill /f /im KMPlayer.exe >nul 2>&1
+    timeout /t 2 >nul
+    goto free_software_menu
+)
+
+echo 64-bit kurulum başarısız. 32-bit deneniyor...
+call :downloadAndInstall "https://dn.kmplayer.com/Dn/kmp32/415d/KMPlayer_4.2.3.34.exe" "kmplayer_setup_x86.exe" "/S /SUPPRESSMSGBOXES /NOICONS /NCRC"
+if %errorlevel% equ 0 (
+    echo KMPlayer 32-bit başarıyla kuruldu (setup).
+    taskkill /f /im KMPlayer.exe >nul 2>&1
+    timeout /t 2 >nul
+    goto free_software_menu
+)
+
+echo Setup kurulumu başarısız oldu. Winget deneniyor...
+winget install KMPlayer.KMPlayer --silent --accept-package-agreements --accept-source-agreements
+if %errorlevel% equ 0 (
+    echo KMPlayer başarıyla kuruldu (winget).
+    call :winget_cleanup
+    taskkill /f /im KMPlayer.exe >nul 2>&1
+    timeout /t 2 >nul
+) else (
+    echo KMPlayer kurulumu tamamen başarısız oldu.
+    pause
+)
+
 goto free_software_menu
 
 :install_sumatra
 cls
-echo Sumatra PDF kuruluyor (winget)...
+call :downloadAndInstall "https://www.sumatrapdfreader.org/dl/rel/3.6.1/SumatraPDF-3.6.1-64-install.exe" "sumatra_setup.exe" "/S"
+if %errorlevel% equ 0 (
+    echo Sumatra PDF başarıyla kuruldu (setup)
+	timeout /t 2
+    goto free_software_menu
+)
+
+echo Setup ile kurulum başarısız oldu. Winget deneniyor...
 winget install SumatraPDF.SumatraPDF --silent --accept-package-agreements --accept-source-agreements
-call :winget_cleanup
+if %errorlevel% equ 0 (
+    echo Sumatra PDF başarıyla kuruldu (winget)
+    call :winget_cleanup
+) else (
+    echo Sumatra PDF kurulumu tamamen başarısız oldu.
+    pause
+)
+timeout /t 2
 goto free_software_menu
 
 :install_notepadpp
 cls
-echo Notepad++ kuruluyor (winget)...
-winget install NotepadPlusPlus.NotepadPlusPlus --silent --accept-package-agreements --accept-source-agreements
-call :winget_cleanup
+set "githubApi=https://api.github.com/repos/notepad-plus-plus/notepad-plus-plus/releases/latest"
+for /f "delims=" %%i in ('powershell -Command ^
+    "$ProgressPreference = 'SilentlyContinue';" ^
+    "try {" ^
+        "$response = Invoke-RestMethod -Uri '%githubApi%' -Headers @{'Accept'='application/vnd.github.v3+json'};" ^
+        "$asset = $response.assets | Where-Object { " ^
+            "$_.name -like '*Installer*x64*.exe' -and " ^
+            "$_.name -notlike '*arm64*' -and " ^
+            "$_.name -notlike '*portable*' -and " ^
+            "$_.name -notlike '*minimal*' } | Select-Object -First 1;" ^
+        "if ($asset) { Write-Output $asset.browser_download_url } else { Write-Output '%fallbackUrl%' }" ^
+    "} catch {" ^
+        "Write-Output '%fallbackUrl%';" ^
+    "}"') do (
+    set "downloadUrl=%%i"
+)
+
+echo İndirme linki: !downloadUrl!
+call :downloadAndInstall "!downloadUrl!" "notepadpp_setup.exe" "/S /noUpdater"
+timeout /t 2
 goto free_software_menu
 
 :install_libreoffice
 cls
-echo LibreOffice kuruluyor (winget)...
-winget install TheDocumentFoundation.LibreOffice --silent --accept-package-agreements --accept-source-agreements
-call :winget_cleanup
+call :downloadAndInstall "https://download.documentfoundation.org/libreoffice/stable/26.2.3/win/x86_64/LibreOffice_26.2.3_Win_x86-64.msi" "libreoffice_setup.msi" "/quiet /norestart TRANSFORMS=:tr"
+if %errorlevel% equ 0 (
+    echo LibreOffice başarıyla kuruldu (setup - Turkce).
+	timeout /t 2
+    goto free_software_menu
+)
+
+echo Setup kurulumu başarisiz oldu. Winget deneniyor...
+winget install TheDocumentFoundation.LibreOffice --silent --accept-package-agreements --accept-source-agreements --locale tr-TR
+if %errorlevel% equ 0 (
+    echo LibreOffice başarıyla kuruldu (winget - Turkce).
+    call :winget_cleanup
+) else (
+    echo LibreOffice kurulumu tamamen başarısız oldu.
+    pause
+)
+
+timeout /t 2
 goto free_software_menu
 
 :install_gimp
 cls
-echo GIMP kuruluyor (winget)...
-winget install GIMP.GIMP --silent --accept-package-agreements
-call :winget_cleanup
+call :downloadAndInstall "https://download.gimp.org/gimp/v3.2/windows/gimp-3.2.4-setup.exe" "gimp_setup.exe" "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /NOUPDATECHECK"
+if %errorlevel% equ 0 (
+    echo GIMP başarıyla kuruldu (setup).
+    timeout /t 2 /nobreak >nul
+    goto free_software_menu
+)
 
-echo [OK] GIMP kurulumu tamamlandi.
+echo Setup ile kurulum başarısız oldu. Winget deneniyor...
+cmd /c "winget install GIMP.GIMP.3 --silent --accept-package-agreements --accept-source-agreements"
+if %errorlevel% equ 0 (
+    echo GIMP başarıyla kuruldu (winget).
+    call :winget_cleanup
+    timeout /t 2 /nobreak >nul
+) else (
+    echo GIMP kurulumu tamamen başarısız oldu.
+    pause
+)
+
 goto free_software_menu
 
 :install_obs
 cls
-echo OBS Studio kuruluyor (winget)...
-winget install OBSProject.OBSStudio --silent --accept-package-agreements --accept-source-agreements
-call :winget_cleanup
+set "OBS_VERSION=32.1.2"
+for /f "tokens=2 delims=:" %%a in ('curl -ks "https://api.github.com/repos/obsproject/obs-studio/releases/latest" ^| findstr "tag_name"') do (
+    set "OBS_VERSION=%%a"
+    set "OBS_VERSION=!OBS_VERSION:~2,-2!"
+    goto :obs_download
+)
+
+:obs_download
+echo Güncel sürüm: %OBS_VERSION%
+set "OBS_URL=https://github.com/obsproject/obs-studio/releases/download/%OBS_VERSION%/OBS-Studio-%OBS_VERSION%-Windows-x64-Installer.exe"
+echo İndirme linki: %OBS_URL%
+
+call :downloadAndInstall "%OBS_URL%" "obs_setup.exe" "/S"
+if %errorlevel% equ 0 (
+    echo OBS Studio başarıyla kuruldu.
+    timeout /t 2 /nobreak >nul
+    goto free_software_menu
+)
+
+echo Setup başarısız. Winget deneniyor...
+cmd /c "winget install OBSProject.OBSStudio --silent --accept-package-agreements --accept-source-agreements"
+if %errorlevel% equ 0 (
+    echo OBS Studio başarıyla kuruldu (winget).
+    call :winget_cleanup
+    timeout /t 2 /nobreak >nul
+) else (
+    echo OBS Studio kurulumu tamamen başarısız oldu.
+    pause
+)
+
 goto free_software_menu
 
 :install_keepass
 cls
-echo KeePassXC kuruluyor (winget)...
-winget install KeePassXCTeam.KeePassXC --silent --accept-package-agreements
-call :winget_cleanup
+set "KP_URL="
+for /f "usebackq tokens=*" %%A in (`curl -ks "https://api.github.com/repos/keepassxreboot/keepassxc/releases/latest" ^| findstr "browser_download_url" ^| findstr "Win64\.msi" ^| findstr /V "Legacy"`) do (
+    set "line=%%A"
+    set "line=!line:*"browser_download_url": "=!"
+    set "line=!line:\"=!"
+    set "KP_URL=!line:,=!"
+    goto :kp_url_found
+)
 
-echo [OK] KeePassXC kurulumu tamamlandi.
+:kp_url_found
+if not defined KP_URL (
+    echo [UYARI] Güncel sürüm bulunamadı, sabit sürüm kullanılıyor...
+    set "KP_URL=https://github.com/keepassxreboot/keepassxc/releases/download/2.7.12/KeePassXC-2.7.12-Win64.msi"
+)
+
+echo İndirme linki: %KP_URL%
+call :downloadAndInstall "%KP_URL%" "keepassxc_setup.msi" "/quiet /norestart"
+if %errorlevel% equ 0 (
+    timeout /t 1 /nobreak >nul
+    goto free_software_menu
+)
+
+echo Setup ile kurulum başarısız oldu. Winget deneniyor...
+cmd /c "winget install KeePassXCTeam.KeePassXC --silent --accept-package-agreements --accept-source-agreements"
+if %errorlevel% equ 0 (
+    call :winget_cleanup
+    timeout /t 1 /nobreak >nul
+) else (
+    echo KeePassXC kurulumu tamamen başarısız oldu.
+    pause
+)
+
 goto free_software_menu
 
 :install_paintnet
 cls
-echo Paint.NET kuruluyor (winget)...
-winget install paintdotnet.Paint.NET --silent --accept-package-agreements
-call :winget_cleanup
+set "PND_VERSION="
+for /f "usebackq tokens=*" %%A in (`curl -ks "https://api.github.com/repos/paintdotnet/release/releases/latest" ^| findstr "tag_name"`) do (
+    set "line=%%A"
+    set "line=!line:*"tag_name": "=!"
+    set "line=!line:\"=!"
+    set "line=!line:,=!"
+    set "PND_VERSION=!line!"
+    goto :pnd_version_found
+)
 
-echo [OK] Paint.NET kurulumu tamamlandi.
+:pnd_version_found
+if not defined PND_VERSION set "PND_VERSION=v5.1.12"
+echo Guncel surum: %PND_VERSION%
+
+set "PND_CLEAN=%PND_VERSION:~1%"
+set "PND_URL=https://github.com/paintdotnet/release/releases/download/%PND_VERSION%/paint.net.%PND_CLEAN%.install.x64.zip"
+
+call :downloadAndInstall "%PND_URL%" "paintnet.zip" ""
+if %errorlevel% equ 0 (
+    timeout /t 1 /nobreak >nul
+    goto free_software_menu
+)
+
+echo Setup basarisiz, Winget deneniyor...
+cmd /c "winget install paintnet.Paint.NET --silent --accept-package-agreements --accept-source-agreements"
+if %errorlevel% equ 0 (
+    call :winget_cleanup
+) else (
+    echo Paint.NET kurulumu tamamen basarisiz oldu.
+    pause
+)
+
 goto free_software_menu
 
 :install_klite
-echo K-Lite Codec Pack kurulumu hazırlanıyor...
-call :downloadAndInstall "https://files3.codecguide.com/K-Lite_Codec_Pack_1970_Full.exe" "klite_setup.exe" "/verysilent /noupdate /nocancel /norestart"
+cls
+call :downloadAndInstall "https://files2.codecguide.com/K-Lite_Codec_Pack_1970_Standard.exe" "klite_setup.exe" "/verysilent /noupdate /nocancel /norestart"
+if %errorlevel% equ 0 (
+    echo K-Lite Codec Pack başarıyla kuruldu.
+    timeout /t 2 /nobreak >nul
+) else (
+    echo K-Lite Codec Pack kurulumu başarısız oldu.
+    echo Alternatif link deneniyor...
+    call :downloadAndInstall "https://files3.codecguide.com/K-Lite_Codec_Pack_1970_Standard.exe" "klite_setup.exe" "/verysilent /noupdate /nocancel /norestart"
+    if %errorlevel% equ 0 (
+        echo K-Lite Codec Pack başarıyla kuruldu.
+        timeout /t 2 /nobreak >nul
+    ) else (
+        echo K-Lite Codec Pack kurulumu tamamen başarısız oldu.
+        pause
+    )
+)
 goto free_software_menu
 
 :install_sharex
 cls
-echo ShareX kuruluyor (Windows Store)...
-winget install ShareX.ShareX --silent --accept-package-agreements
-call :winget_cleanup
-echo [OK] Kurulumu tamamlandi ve gecici dosyalar temizlendi.
+set "SHAREX_URL=https://github.com/ShareX/ShareX/releases/download/v20.1.0/ShareX-20.1.0-setup-x64.exe"
+
+call :downloadAndInstall "%SHAREX_URL%" "sharex_setup.exe" "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-"
+
+if !errorlevel! equ 0 (
+    echo.
+    echo [OK] ShareX başarıyla kuruldu.
+    timeout /t 2 /nobreak >nul
+    goto free_software_menu
+)
+
+echo.
+echo [UYARI] Setup kurulumu başarısız oldu. Winget deneniyor...
+
+cmd /c "winget install ShareX.ShareX --silent --accept-package-agreements --accept-source-agreements"
+
+if !errorlevel! equ 0 (
+    echo.
+    echo [OK] ShareX başarıyla kuruldu (winget).
+    call :winget_cleanup
+) else (
+    echo.
+    echo [HATA] ShareX kurulumu tamamen başarısız oldu.
+    pause
+)
+
 goto free_software_menu
 
 :install_everything
 cls
-echo Everything kurulumu hazırlanıyor...
-echo En güncel sürüm kontrol ediliyor...
-
-for /f "delims=" %%a in ('powershell -NoProfile -Command "try { $url = 'https://www.voidtools.com/downloads/'; $response = Invoke-WebRequest -Uri $url -UseBasicParsing; $match = [regex]::Match($response.Content, 'Everything-([0-9.]+)\.x64\.Setup\.exe'); if ($match.Success) { Write-Host $match.Groups[1].Value } else { Write-Host '1.4.1.1032' } } catch { Write-Host '1.4.1.1032' }"') do set "EVERY_VERSION=%%a"
-
-set "EVERY_URL=https://www.voidtools.com/Everything-%EVERY_VERSION%.x64-Setup.exe"
-echo İndirilecek sürüm: %EVERY_VERSION%
-echo İndirme bağlantısı: %EVERY_URL%
-
-call :downloadAndInstall "%EVERY_URL%" "everything_setup.exe" "/S /NOUPDATECHECK"
+call :downloadAndInstall "https://www.voidtools.com/Everything-1.4.1.1030.x64-Setup.exe" "everything_setup.exe" "/S /NOUPDATECHECK"
 
 echo Everything ayarları yapılandırılıyor...
 timeout /t 1 >nul
-
 reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "Everything" /f >nul 2>&1
 reg delete "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "Everything" /f >nul 2>&1
 
@@ -2045,27 +2234,74 @@ reg add "HKLM\SOFTWARE\Everything" /v "RunOnSystemStartup" /t REG_DWORD /d 0 /f 
 reg add "HKCU\Software\Everything" /v "ShellContextMenu" /t REG_DWORD /d 1 /f >nul 2>&1
 
 echo [OK] Everything kurulumu tamamlandı
-echo  Başlangıçta çalışma devre dışı bırakıldı
-echo  Servis manuel moda alındı
-echo  Context menu entegrasyonu aktif
+echo ✓ Başlangıçta çalışma devre dışı bırakıldı
+echo ✓ Servis manuel moda alındı
+echo ✓ Context menu entegrasyonu aktif
 timeout /t 2 >nul
 goto free_software_menu
 
 :install_iobit_unlocker
-echo IObit Unlocker kurulumu hazırlanıyor...
-call :downloadAndInstall "https://cdn.iobit.com/dl/unlocker-setup.exe" "iobit_unlocker.exe" "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /NOUPDATE"
+cls
+call :downloadAndInstall "https://cdn.iobit.com/dl/unlocker-setup.exe" "iobit_unlocker.exe" "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-"
+
+echo.
+echo Kurulum sonrası optimizasyon yapılıyor...
+echo.
+
+taskkill /f /im "IObitUnlocker.exe" >nul 2>&1
+taskkill /f /im "Unlocker.exe" >nul 2>&1
+
+reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "IObitUnlocker" /f >nul 2>&1
+reg delete "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "IObitUnlocker" /f >nul 2>&1
+reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "IObit Unlocker" /f >nul 2>&1
+reg delete "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "IObit Unlocker" /f >nul 2>&1
+
+sc stop "IObitUnlocker" >nul 2>&1
+sc stop "IObitUnlockerService" >nul 2>&1
+sc config "IObitUnlocker" start= demand >nul 2>&1
+sc config "IObitUnlockerService" start= demand >nul 2>&1
+
+del "%temp%\IObitUnlocker*.tmp" 2>nul
+
+echo.
+echo ==========================================
+echo [OK] IObit Unlocker basariyla kuruldu
+echo ==========================================
+echo.
+echo  - Silent kurulum tamamlandı
+echo  - Otomatik başlangıç temizlendi
+echo  - Gereksiz autorun kapatıldı
+echo  - Servis manuel moda alındı
+echo.
+
+timeout /t 2 /nobreak >nul
 goto free_software_menu
 
-:install_ccleaner
-echo CCleaner kurulumu hazırlanıyor...
-call :downloadAndInstall "https://bits.avcdn.net/productfamily_CCLEANER/insttype_FREE/platform_WIN_PIR/installertype_ONLINE/build_RELEASE/" "ccleaner_setup.exe" "/S /NOICONS /NOCLOSEAPPLICATIONS /NORESTARTAPPLICATIONS /NOUPDATE"
+:install_bleachbit
+cls
+call :downloadAndInstall "https://download.bleachbit.org/get/BleachBit-6.0.0-setup.exe" "bleachbit_setup.exe" "/S /allusers"
+timeout /t 1 /nobreak >nul
 goto free_software_menu
 
 :install_inkscape
 cls
-echo Inkscape kuruluyor (winget)...
-winget install Inkscape.Inkscape --silent --accept-package-agreements
-call :winget_cleanup
+echo Inkscape kurulumu hazırlanıyor...
+call :downloadAndInstall "https://media.inkscape.org/dl/resources/file/inkscape-1.4.2-x64.msi" "inkscape_setup.msi" "/quiet /norestart"
+if %errorlevel% equ 0 (
+    timeout /t 1 /nobreak >nul
+    goto free_software_menu
+)
+
+echo Setup ile kurulum başarısız oldu. Winget deneniyor...
+cmd /c "winget install Inkscape.Inkscape --silent --accept-package-agreements --accept-source-agreements"
+if %errorlevel% equ 0 (
+    call :winget_cleanup
+    timeout /t 2 /nobreak >nul
+) else (
+    echo Inkscape kurulumu tamamen başarısız oldu.
+    pause
+)
+
 goto free_software_menu
 
 :install_factory
@@ -2075,6 +2311,7 @@ Start https://www.mediafire.com/file/odljc8b62ds5cpn/FormatFactory5.18.0.0.zip
 goto free_software_menu
 
 :downloadAndInstall
+setlocal EnableDelayedExpansion
 set "url=%~1"
 set "filename=%~2"
 set "installParams=%~3"
@@ -2082,118 +2319,278 @@ set "tempFile=%tempDir%\%filename%"
 set "extractDir=%tempDir%\%~n2_extracted"
 
 echo.
+echo 	==========================================
+echo             DOSYA İNDİRME ve KURULUM İŞLEMİ
+echo 	==========================================
+echo.
 echo İndiriliyor: %filename%
 echo.
-powershell -Command "$ProgressPreference='SilentlyContinue'; $webClient = New-Object Net.WebClient; $webClient.Headers.Add('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'); try { $webClient.DownloadFile('%url%', '%tempFile%'); exit 0 } catch { exit 1 }"
 
-if errorlevel 1 (
-    echo [HATA] Dosya indirilemedi - İnternet bağlantısını kontrol edin
-    goto download_end
+echo %url% | findstr /I /C:"api.github.com/repos/" >nul
+if !errorlevel! equ 0 (
+    echo GitHub API ile güncel sürüm aranıyor...
+    set "downloadUrl="
+
+    for /f "usebackq tokens=*" %%A in (`
+        curl -ksL "%url%" ^
+        ^| findstr /I "browser_download_url" ^
+        ^| findstr /I ".exe" ^
+        ^| findstr /I "x64" ^
+        ^| findstr /V /I "arm64" ^
+        ^| findstr /V /I ".sig" ^
+        ^| findstr /V /I "sha256"
+    `) do (
+        set "line=%%A"
+        set "line=!line:*\"browser_download_url\": \"=!"
+        set "line=!line:\"=!"
+        set "line=!line:,=!"
+        set "downloadUrl=!line!"
+        goto github_url_found
+    )
+
+    REM x64 bulunamazsa normal exe ara
+    for /f "usebackq tokens=*" %%A in (`
+        curl -ksL "%url%" ^
+        ^| findstr /I "browser_download_url" ^
+        ^| findstr /I ".exe" ^
+        ^| findstr /V /I "arm64" ^
+        ^| findstr /V /I ".sig" ^
+        ^| findstr /V /I "sha256"
+    `) do (
+        set "line=%%A"
+        set "line=!line:*\"browser_download_url\": \"=!"
+        set "line=!line:\"=!"
+        set "line=!line:,=!"
+        set "downloadUrl=!line!"
+        goto github_url_found
+    )
+
+    :github_url_found
+    if not defined downloadUrl (
+        echo.
+        echo [HATA] GitHub API indirme linki bulunamadı.
+        exit /b 1
+    )
+
+    echo.
+    echo [OK] Güncel sürüm bulundu
+    echo !downloadUrl!
+    echo.
+
+    curl -L ^
+        --retry 5 ^
+        --retry-delay 3 ^
+        --retry-connrefused ^
+        --progress-bar ^
+        -H "User-Agent: Mozilla/5.0" ^
+        -o "%tempFile%" "!downloadUrl!"
+
+) else (
+
+    curl -L ^
+        --retry 5 ^
+        --retry-delay 3 ^
+        --retry-connrefused ^
+        --progress-bar ^
+        -o "%tempFile%" "%url%"
 )
 
-if exist "%tempFile%" (
-    for %%I in ("%tempFile%") do set "fileSize=%%~zI"
-    if !fileSize! leq 0 (
-        echo [HATA] Dosya boyutu 0 - İndirme başarısız
-        del "%tempFile%" /f /q 2>nul
-        goto download_end
-    )
-    
-    set /a fileSizeMB=!fileSize!/1048576
-    set /a fileSizeKB=!fileSize!/1024
-    echo [OK] İndirme tamamlandı. Dosya boyutu: !fileSizeMB! MB (!fileSizeKB! KB)
-    
-    echo Kurulum yapılıyor...
-    
-    if "!filename:~-4!"==".zip" (
-        echo ZIP dosyası çıkarılıyor...
-        if exist "%extractDir%" rmdir /s /q "%extractDir%" 2>nul
-        
-        powershell -Command "Add-Type -Assembly System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::ExtractToDirectory('%tempFile%', '%extractDir%')" 2>nul
-        
-        if exist "%extractDir%" (
-            echo [OK] ZIP dosyası çıkarıldı
-            set "setupFile="
-            for /r "%extractDir%" %%F in (*.exe *.msi) do (
-                if "!setupFile!"=="" (
-                    echo Kurulum dosyası bulundu: %%~nxF
-                    set "setupFile=%%F"
-                )
-            )
-            
-            if defined setupFile (
-                echo Kurulum yapılıyor: !setupFile
-                if "!filename!"=="paintnet.zip" (
-                    set "installParams=/auto"
-                )
-                
-                start "" /wait "!setupFile!" !installParams!
-                echo [OK] Kurulum tamamlandı
-            ) else (
-                echo [UYARI] Kurulum dosyası bulunamadı, portable kopyalama yapılıyor...
-                set "targetDir=C:\Program Files\%~n2"
-                if not exist "!targetDir!" mkdir "!targetDir!"
-                xcopy /s /y /q "%extractDir%\*" "!targetDir!\" 2>nul
-                echo [OK] Portable yazılım kuruldu: !targetDir!
-            )
-            rmdir /s /q "%extractDir%" 2>nul
-            
-        ) else (
-            echo [HATA] ZIP dosyası çıkarılamadı
-        )
-        
-    ) else if "!filename:~-4!"==".msi" (
-        echo MSI kurulumu yapılıyor...
-        msiexec /i "%tempFile%" %installParams% /qn /norestart
-        echo [OK] MSI kurulumu tamamlandı
-    ) else (
-        echo EXE kurulumu yapılıyor...
-        start "" /wait "%tempFile%" %installParams%
-        echo [OK] Kurulum tamamlandı
-    )
-    
+if !errorlevel! neq 0 (
+    echo.
+    echo [HATA] Dosya indirilemedi
+    exit /b 1
+)
+
+if not exist "%tempFile%" (
+    echo.
+    echo [HATA] Dosya bulunamadı
+    exit /b 1
+)
+
+for %%I in ("%tempFile%") do set "fileSize=%%~zI"
+
+if !fileSize! leq 0 (
+    echo.
+    echo [HATA] Dosya bozuk veya sıfır boyutlu
     del "%tempFile%" /f /q 2>nul
-    if exist "%tempFile%" (
-        powershell -Command "Remove-Item '%tempFile%' -Force -ErrorAction SilentlyContinue" 2>nul
+    exit /b 1
+)
+
+set /a fileSizeMB=!fileSize!/1048576
+set /a fileSizeKB=!fileSize!/1024
+echo.
+echo [OK] İndirme tamamlandı
+echo Boyut: !fileSizeMB! MB (!fileSizeKB! KB)
+
+if /I "!filename:~-4!"==".zip" (
+    echo.
+    echo ZIP arşivi çıkarılıyor...
+    if exist "%extractDir%" (
+        rmdir /s /q "%extractDir%" 2>nul
     )
-    
-    if exist "%tempFile%" (
-        echo [UYARI] Geçici dosya silinemedi: %tempFile%
+
+    mkdir "%extractDir%" >nul 2>&1
+    tar -xf "%tempFile%" -C "%extractDir%" >nul 2>&1
+    if !errorlevel! neq 0 (
+        echo tar başarısız, PowerShell deneniyor...
+        powershell -Command "Expand-Archive -Path '%tempFile%' -DestinationPath '%extractDir%' -Force" >nul 2>&1
+    )
+
+    if not exist "%extractDir%" (
+        echo.
+        echo [HATA] ZIP çıkarılamadı
+        del "%tempFile%" /f /q 2>nul
+        exit /b 1
+    )
+
+    echo [OK] ZIP çıkarıldı
+    set "setupFile="
+
+    for /r "%extractDir%" %%F in (setup.exe Setup.exe INSTALL.exe install.exe) do (
+        set "setupFile=%%F"
+        goto installer_found
+    )
+
+    for /r "%extractDir%" %%F in (*.exe *.msi) do (
+        if not defined setupFile (
+            set "setupFile=%%F"
+        )
+    )
+
+    :installer_found
+    if defined setupFile (
+        echo.
+        echo Kurulum dosyası bulundu:
+        echo !setupFile!
+        echo.
+        if /I "!setupFile:~-4!"==".msi" (
+            msiexec /i "!setupFile!" %installParams% /qn /norestart
+        ) else (
+            start "" /wait "!setupFile!" %installParams%
+        )
+
+        if !errorlevel! neq 0 (
+            echo.
+            echo [HATA] ZIP içindeki kurulum başarısız
+            rmdir /s /q "%extractDir%" 2>nul
+            del "%tempFile%" /f /q 2>nul
+            exit /b 1
+        )
+
+        echo.
+        echo [OK] Kurulum tamamlandı
+
     ) else (
-        echo [OK] Geçici dosya temizlendi
+        echo.
+        echo [UYARI] Kurulum dosyası bulunamadı
+        echo %filename% | findstr /I "portable" >nul
+        if !errorlevel! equ 0 (
+            set "targetDir=C:\Program Files\%~n2"
+            if not exist "!targetDir!" (
+                mkdir "!targetDir!"
+            )
+            xcopy "%extractDir%\*" "!targetDir!\" /E /I /Y /Q >nul
+            echo [OK] Portable kurulum tamamlandı
+            echo !targetDir!
+        ) else (
+            echo [HATA] Portable kurulum whitelist dışı
+            rmdir /s /q "%extractDir%" 2>nul
+            del "%tempFile%" /f /q 2>nul
+            exit /b 1
+        )
     )
-:download_end
+
+    rmdir /s /q "%extractDir%" 2>nul
+    del "%tempFile%" /f /q 2>nul
+    echo.
+    timeout /t 2 /nobreak >nul
+    exit /b 0
+)
+
+if /I "!filename:~-4!"==".msi" (
+    echo.
+    echo MSI kurulumu yapılıyor...
+    msiexec /i "%tempFile%" %installParams% /qn /norestart
+    if !errorlevel! neq 0 (
+        echo.
+        echo [HATA] MSI kurulumu başarısız
+        del "%tempFile%" /f /q 2>nul
+        exit /b 1
+    )
+
+    echo.
+    echo [OK] MSI kurulumu tamamlandı
+    del "%tempFile%" /f /q 2>nul
+    timeout /t 2 /nobreak >nul
+    exit /b 0
+)
+
+echo.
+echo EXE kurulumu yapılıyor...
+start "" /wait "%tempFile%" %installParams%
+if !errorlevel! neq 0 (
+    echo.
+    echo [HATA] EXE kurulumu başarısız
+    del "%tempFile%" /f /q 2>nul
+    exit /b 1
+)
+
+echo.
+echo [OK] EXE kurulumu tamamlandı
+del "%tempFile%" /f /q 2>nul
 echo.
 timeout /t 2 /nobreak >nul
-exit /b
+exit /b 0
 
 :winget_cleanup
-echo Geçici winget dosyalari temizleniyor...
+echo.
+echo ==========================================
+echo      Winget Geçici Dosya Temizliği
+echo ==========================================
+echo.
+
 if exist "%TEMP%\WinGet\" (
     del /f /s /q "%TEMP%\WinGet\*.*" >nul 2>&1
-    rmdir /s /q "%TEMP%\WinGet\" 2>nul
+    for /d %%D in ("%TEMP%\WinGet\*") do (
+        rmdir /s /q "%%D" >nul 2>&1
+    )
+    echo [OK] TEMP\WinGet temizlendi
+)
+
+if exist "%LOCALAPPDATA%\Temp\WinGet\" (
+    del /f /s /q "%LOCALAPPDATA%\Temp\WinGet\*.*" >nul 2>&1
+    for /d %%D in ("%LOCALAPPDATA%\Temp\WinGet\*") do (
+        rmdir /s /q "%%D" >nul 2>&1
+    )
+    echo [OK] Local Temp\WinGet temizlendi
 )
 
 if exist "%LOCALAPPDATA%\Packages\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\TempState\" (
     del /f /s /q "%LOCALAPPDATA%\Packages\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\TempState\*.*" >nul 2>&1
-    rmdir /s /q "%LOCALAPPDATA%\Packages\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\TempState\" 2>nul
+    for /d %%D in ("%LOCALAPPDATA%\Packages\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\TempState\*") do (
+        rmdir /s /q "%%D" >nul 2>&1
+    )
+    echo [OK] TempState temizlendi
 )
 
-if exist "%LOCALAPPDATA%\Temp\WinGet\" (
-    rmdir /s /q "%LOCALAPPDATA%\Temp\WinGet\" 2>nul
-)
+winget cache clean --force >nul 2>&1
+if !errorlevel! equ 0 echo [OK] Winget cache temizlendi
 
 if not exist "%TEMP%\WinGet\" mkdir "%TEMP%\WinGet\" 2>nul
+if not exist "%LOCALAPPDATA%\Temp\WinGet\" mkdir "%LOCALAPPDATA%\Temp\WinGet\" 2>nul
 
-echo [OK] Temizlik tamamlandi.
-exit /b
+echo.
+echo [OK] Winget temizliği tamamlandı
+echo.
+timeout /t 1 /nobreak >nul
+exit /b 0
 
 :view_system_logs
 @echo off
 mode con: cols=82 lines=28
 cls
 echo ╔════════════════════════════════════════════════════════════════════════════════╗
-echo ║                         SİSTEM LOGLARI GÖRÜNTÜLEME                           ║
+echo ║                         SİSTEM LOGLARI GÖRÜNTÜLEME                             ║
 echo ╠════════════════════════════════════════════════════════════════════════════════╣
 echo ║ [1] Olay Görüntüleyici'yi Aç           [2] Son 10 Sistem Hatasını Görüntüle    ║
 echo ║ [3] Son 10 Uygulama Hatasını Görüntüle [4] Son 10 Güvenlik Olayını Görüntüle   ║
