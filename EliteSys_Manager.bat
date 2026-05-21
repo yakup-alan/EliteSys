@@ -245,21 +245,28 @@ if exist "%temp%\getadmin.vbs" ( Del "%temp%\getadmin.vbs" )
 goto ana_menu
 
 :Microsoft_Store_App
-curl -L --fail --retry 3 "https://raw.githubusercontent.com/yakup-alan/MS_St_App/main/MS_St_App.cmd" -o "%USERPROFILE%\Desktop\Microsoft_Store_App_Manager.cmd" && start "" "%USERPROFILE%\Desktop\Microsoft_Store_App_Manager.cmd"
-
+cls
 echo Microsoft Store App Manager indiriliyor...
-curl -L --fail --retry 3 "%URL%" -o "%OUT%"
+
+set "URL=https://raw.githubusercontent.com/yakup-alan/Microsoft_Store_App/main/MsStApp.cmd"
+set "OUT=%USERPROFILE%\Desktop\Microsoft_Store_App_Manager.cmd"
+
+curl -L --fail --retry 3 -H "User-Agent: Mozilla/5.0" -o "%OUT%" "%URL%"
 
 if not exist "%OUT%" (
-    echo Indirme başarısız oldu.
+    echo.
+    echo Indirme basarisiz oldu.
     pause
     goto ana_menu
 )
 
+echo.
+echo Microsoft Store App Manager masaüstüne indirildi.
+echo Program başlatılıyor... lütfen bekleyin.
+
 start "" "%OUT%"
-echo  Microsoft Store App Manager.cmd Masa üstüne indirilip çalıştırılacak..
-echo  Lütfen bekleyiniz..
-timeout /t 5 >nul
+
+timeout /t 3 /nobreak >nul
 goto ana_menu
 
 :wifi_sifreleri
